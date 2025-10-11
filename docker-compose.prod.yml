@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  rea-db:
+    image: postgres:15-alpine
+    container_name: rea-database-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME:-REA_DB}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-YourStrongPassword123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - rea-network-prod
+    restart: unless-stopped
+
+  rea-api:
+    build:
+      context: .
+      dockerfile: REA.API/Dockerfile
+    container_name: rea-api-prod
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=rea-db;Database=${DB_NAME:-REA_DB};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-YourStrongPassword123};Port=5432
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rea-db
+    networks:
+      - rea-network-prod
+    restart: unless-stopped
+
+  rea-client:
+    build:
+      context: ./REA.Client
+      dockerfile: Dockerfile
+    container_name: rea-client-prod
+    environment:
+      - NUXT_PUBLIC_API_BASE=http://localhost:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rea-api
+    networks:
+      - rea-network-prod
+    restart: unless-stopped
+
+networks:
+  rea-network-prod:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:

@@ -1,0 +1,62 @@
+services:
+  # PostgreSQL Database
+  rea-db:
+    image: postgres:15-alpine
+    container_name: rea-database
+    environment:
+      POSTGRES_DB: REA_DB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./REA.Database.PostgreSql/scripts/:/docker-entrypoint-initdb.d/
+    networks:
+      - rea-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # .NET API (Backend)
+  rea-api:
+    build:
+      context: .
+      dockerfile: REA.API/Dockerfile
+    container_name: rea-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=rea-db;Database=REA_DB;Username=postgres;Password=password;Port=5432
+    ports:
+      - "8080:8080"
+    depends_on:
+      rea-db:
+        condition: service_healthy
+    networks:
+      - rea-network
+    restart: on-failure
+
+  # Nuxt.js Client (Frontend)
+  rea-client:
+    build:
+      context: ./REA.Client
+      dockerfile: Dockerfile
+    container_name: rea-client
+    environment:
+      - NUXT_PUBLIC_API_BASE=http://rea-api:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rea-api
+    networks:
+      - rea-network
+    restart: on-failure
+
+networks:
+  rea-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
