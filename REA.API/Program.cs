@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using REA.Models.Data;
 using REA.API.Services;
-using REA.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,14 +26,16 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Application Services
-builder.Services.AddScoped<IStudentService, StudentService>();
-builder.Services.AddScoped<ITeacherService, TeacherService>();
-builder.Services.AddScoped<IAcademicRecordService, AcademicRecordService>();
-builder.Services.AddScoped<IOCRService, GoogleOCRService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+// JWT Configuration
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["SecretKey"];
 
-// JWT Authentication
+if (string.IsNullOrEmpty(secretKey) || secretKey.Length < 32)
+{
+    throw new InvalidOperationException("JWT SecretKey must be at least 32 characters long");
+}
+
+// JWT Authentication - SOLO UNA VEZ
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -44,12 +45,49 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("Token validated successfully");
+                return Task.CompletedTask;
+            }
         };
     });
+
+// Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("DirectorOnly", policy => 
+        policy.RequireRole("Director"));
+    
+    options.AddPolicy("AdminOnly", policy => 
+        policy.RequireRole("Director", "VicePrincipal"));
+    
+    options.AddPolicy("TeacherOnly", policy => 
+        policy.RequireRole("Teacher"));
+    
+    options.AddPolicy("AllUsers", policy => 
+        policy.RequireRole("Director", "VicePrincipal", "Teacher"));
+});
+
+// Application Services
+builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<ITeacherService, TeacherService>();
+builder.Services.AddScoped<IAcademicRecordService, AcademicRecordService>();
+builder.Services.AddScoped<IOCRService, GoogleOCRService>(); // Cambiado de OCRService a GoogleOCRService
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -66,11 +104,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowNuxtApp");
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check endpoint
+app.MapGet("/api/health", () => new { status = "API is running", timestamp = DateTime.UtcNow });
 
 app.Run();

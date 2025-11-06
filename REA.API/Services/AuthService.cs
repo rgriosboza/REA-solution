@@ -1,10 +1,12 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using REA.Models.Data;
+using REA.Models.DTOs;
 using REA.Models.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace REA.API.Services
 {
@@ -19,60 +21,134 @@ namespace REA.API.Services
             _configuration = configuration;
         }
 
-        public async Task<string> LoginAsync(string username, string password)
+        public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            // For now, using simple authentication
-            // In production, use proper password hashing
+            // Use Email instead of UsernameOrEmail
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (user == null || !VerifyPassword(password, user.PasswordHash))
+            if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
             {
-                throw new UnauthorizedAccessException("Invalid credentials");
+                return new LoginResponse { Success = false, Message = "Invalid credentials" };
             }
-
-            // Update last login
-            user.LastLogin = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return GenerateJwtToken(user);
+            // ... rest of the method
         }
 
-        public Task<bool> ValidateTokenAsync(string token)
+        public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
-            // Basic token validation
-            // In production, implement proper token validation
-            return Task.FromResult(!string.IsNullOrEmpty(token));
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+            if (user == null || user.RefreshTokenExpiry <= DateTime.UtcNow)
+            {
+                return new LoginResponse { Success = false, Message = "Invalid refresh token" };
+            }
+
+            var token = GenerateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
+            return new LoginResponse
+            {
+                Success = true,
+                Token = token,
+                RefreshToken = refreshToken,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Username = user.Username, // Usamos Username en lugar de FirstName/LastName
+                    Role = user.Role
+                }
+            };
+        }
+
+        public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || !VerifyPassword(request.CurrentPassword, user.PasswordHash))
+            {
+                return false;
+            }
+
+            user.PasswordHash = HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ValidateTokenAsync(string token)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"]!);
+
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+                var user = await _context.Users.FindAsync(userId);
+                return user != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<User?> GetUserByIdAsync(int userId)
+        {
+            return await _context.Users.FindAsync(userId);
         }
 
         private string GenerateJwtToken(User user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"]!);
 
-            var claims = new[]
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Name, user.Username), // Usamos Username
+                    new Claim(ClaimTypes.Role, user.Role)
+                }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"])),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
-        private bool VerifyPassword(string password, string storedHash)
+        private string GenerateRefreshToken()
         {
-            // For development purposes only - use proper password hashing in production
-            return password == "admin123" && storedHash.Contains("exampleHash");
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+
+        private string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+        private bool VerifyPassword(string password, string passwordHash)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
         }
     }
 }

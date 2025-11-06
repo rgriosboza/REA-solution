@@ -21,8 +21,8 @@ namespace REA.API.Services
                 StudentId = request.StudentId,
                 TeacherId = request.TeacherId,
                 Subject = request.Subject,
-                Grade = request.Grade,
-                Term = request.Term,
+                FinalGrade = request.FinalGrade,
+                Period = request.Period,
                 SchoolYear = request.SchoolYear,
                 Comments = request.Comments,
                 RecordDate = DateTime.UtcNow
@@ -50,7 +50,8 @@ namespace REA.API.Services
                 .Include(ar => ar.Student)
                 .Include(ar => ar.Teacher)
                 .Where(ar => ar.StudentId == studentId)
-                .OrderByDescending(ar => ar.RecordDate)
+                .OrderBy(ar => ar.Period)
+                .ThenByDescending(ar => ar.RecordDate)
                 .ToListAsync();
 
             var responses = new List<AcademicRecordResponse>();
@@ -67,7 +68,8 @@ namespace REA.API.Services
                 .Include(ar => ar.Student)
                 .Include(ar => ar.Teacher)
                 .Where(ar => ar.TeacherId == teacherId)
-                .OrderByDescending(ar => ar.RecordDate)
+                .OrderBy(ar => ar.Period)
+                .ThenByDescending(ar => ar.RecordDate)
                 .ToListAsync();
 
             var responses = new List<AcademicRecordResponse>();
@@ -86,8 +88,8 @@ namespace REA.API.Services
             academicRecord.StudentId = request.StudentId;
             academicRecord.TeacherId = request.TeacherId;
             academicRecord.Subject = request.Subject;
-            academicRecord.Grade = request.Grade;
-            academicRecord.Term = request.Term;
+            academicRecord.FinalGrade = request.FinalGrade;
+            academicRecord.Period = request.Period;
             academicRecord.SchoolYear = request.SchoolYear;
             academicRecord.Comments = request.Comments;
 
@@ -121,8 +123,8 @@ namespace REA.API.Services
                 TeacherId = academicRecord.TeacherId,
                 TeacherName = teacher != null ? $"{teacher.FirstName} {teacher.LastName}" : "Unknown Teacher",
                 Subject = academicRecord.Subject,
-                Grade = academicRecord.Grade,
-                Term = academicRecord.Term,
+                FinalGrade = academicRecord.FinalGrade,
+                Period = academicRecord.Period,
                 SchoolYear = academicRecord.SchoolYear,
                 RecordDate = academicRecord.RecordDate,
                 Comments = academicRecord.Comments

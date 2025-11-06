@@ -32,11 +32,15 @@ namespace REA.Models.Data
                 entity.HasIndex(t => t.Email).IsUnique();
             });
 
-            // AcademicRecord configuration
+            // AcademicRecord configuration - ACTUALIZADO
             modelBuilder.Entity<AcademicRecord>(entity =>
             {
-                entity.HasIndex(ar => new { ar.StudentId, ar.Subject, ar.Term });
-                entity.HasIndex(ar => new { ar.TeacherId, ar.Term });
+                // CAMBIO: Usar Period en lugar de Term
+                entity.HasIndex(ar => new { ar.StudentId, ar.Subject, ar.Period, ar.SchoolYear });
+                entity.HasIndex(ar => new { ar.TeacherId, ar.Period, ar.SchoolYear });
+        
+                // CORRECCIÓN: Nueva forma de configurar check constraint
+                entity.ToTable(t => t.HasCheckConstraint("CK_AcademicRecords_Period", "\"Period\" BETWEEN 1 AND 4"));
             });
 
             // Payment configuration

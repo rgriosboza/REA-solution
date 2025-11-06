@@ -18,14 +18,16 @@ namespace REA.Models.Entities
         [StringLength(100)]
         public string Subject { get; set; } = string.Empty;
 
+        // CAMBIO: Calificación final del período (0-100)
         [Required]
-        [Column(TypeName = "decimal(4,2)")]
+        [Column(TypeName = "decimal(5,2)")]
         [Range(0, 100)]
-        public decimal Grade { get; set; }
+        public decimal FinalGrade { get; set; }
 
+        // CAMBIO: Período específico (1-4)
         [Required]
-        [StringLength(10)]
-        public string Term { get; set; } = string.Empty; // e.g., "2024-Q1"
+        [Range(1, 4)]
+        public int Period { get; set; }
 
         [Required]
         public int SchoolYear { get; set; }
