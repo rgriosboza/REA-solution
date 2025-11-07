@@ -259,6 +259,7 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth()
 
     return {
+        useAuthStore,
         // State
         user: readonly(user),
         token: readonly(token),
