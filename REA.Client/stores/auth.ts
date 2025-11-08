@@ -52,7 +52,6 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (err: any) {
             error.value = err.data?.message || err.message || 'Error al iniciar sesión'
-            throw new Error(error.value)
         } finally {
             isLoading.value = false
         }
@@ -123,7 +122,6 @@ export const useAuthStore = defineStore('auth', () => {
             return true
         } catch (err: any) {
             error.value = err.data?.message || 'Error al cambiar contraseña'
-            throw new Error(error.value)
         }
     }
 
@@ -259,7 +257,8 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth()
 
     return {
-        useAuthStore,
+        // Remove this line: useAuthStore,
+
         // State
         user: readonly(user),
         token: readonly(token),
