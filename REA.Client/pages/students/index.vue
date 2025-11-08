@@ -392,16 +392,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import {useAuthStore} from "~/stores/auth";
 
 definePageMeta({
-  middleware: defineNuxtRouteMiddleware((to, from) => {
-    const authStore = useAuthStore()
-
-    if (!authStore.isAuthenticated) {
-      return navigateTo('/login')
-    }
-  })
+  middleware: ['auth']
 })
 
 const { $api } = useNuxtApp()

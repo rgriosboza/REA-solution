@@ -14,7 +14,11 @@
     <!-- Upload Section -->
     <Card class="mb-6">
       <template #content>
-        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors">
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+             @click="!previewUrl && fileInput?.click()"
+             @drop="handleDrop"
+             @dragover.prevent
+             @dragenter.prevent>
           <input
               ref="fileInput"
               type="file"
@@ -31,18 +35,36 @@
             </div>
             <div>
               <p class="text-lg font-medium text-gray-900 mb-1">
-                Selecciona un documento para procesar
+                Arrastra y suelta un documento aquí
               </p>
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-gray-500 mb-4">
+                o haz clic para seleccionar un archivo
+              </p>
+              <p class="text-xs text-gray-400">
                 Formatos soportados: JPG, PNG, PDF (máx. 5MB)
               </p>
             </div>
+
+            <!-- Primary Upload Button -->
             <Button
-                label="Seleccionar Archivo"
-                icon="pi pi-image"
-                @click="fileInput?.click()"
-                class="mt-4"
+                label="Seleccionar Documento"
+                icon="pi pi-upload"
+                @click.stop="fileInput?.click()"
+                size="large"
+                class="mt-2"
             />
+
+            <!-- Try with Sample Button -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <p class="text-sm text-gray-600 mb-3">¿Quieres probar primero?</p>
+              <Button
+                  label="Probar con Imagen de Ejemplo"
+                  icon="pi pi-eye"
+                  severity="secondary"
+                  @click.stop="useSampleImage"
+                  size="small"
+              />
+            </div>
           </div>
 
           <div v-else class="space-y-4">
@@ -95,7 +117,6 @@
         </div>
       </template>
     </Card>
-
     <!-- Results Section -->
     <div v-if="result || error" class="space-y-6">
       <!-- Error Message -->
@@ -390,6 +411,52 @@ const copyToClipboard = async (text: string) => {
     console.error('Failed to copy:', err)
   }
 }
+// Add these methods to your script section
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  const files = event.dataTransfer?.files
+  if (files && files[0]) {
+    handleFileUpload(files[0])
+  }
+}
+
+const handleFileUpload = (file: File) => {
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    error.value = 'El archivo es demasiado grande. Máximo 5MB.'
+    return
+  }
+
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+  if (!validTypes.includes(file.type)) {
+    error.value = 'Formato no soportado. Use JPG, PNG o PDF.'
+    return
+  }
+
+  selectedFile.value = file
+  fileName.value = file.name
+  fileSize.value = formatFileSize(file.size)
+  previewUrl.value = URL.createObjectURL(file)
+  error.value = null
+}
+
+const useSampleImage = async () => {
+  // You can use a sample image URL or create a sample file
+  try {
+    isLoading.value = true
+    // Example: Load a sample image from your assets
+    const response = await fetch('/images/sample-document.jpg') // Add a sample image to your public folder
+    const blob = await response.blob()
+    const file = new File([blob], 'sample-document.jpg', { type: 'image/jpeg' })
+    handleFileUpload(file)
+  } catch (err) {
+    // Fallback: Create a mock file selection
+    error.value = 'No se pudo cargar la imagen de ejemplo. Por favor, selecciona un archivo manualmente.'
+  } finally {
+    isLoading.value = false
+  }
+} 
 
 const saveToSystem = async () => {
   // TODO: Implement save functionality
