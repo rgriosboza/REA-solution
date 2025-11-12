@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div>
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">
@@ -11,14 +11,58 @@
       </p>
     </div>
 
+    <!-- Quick Test Buttons -->
+    <Card class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <template #content>
+        <div class="space-y-4">
+          <div class="flex items-center space-x-2 mb-3">
+            <i class="pi pi-bolt text-yellow-600 text-xl"></i>
+            <h3 class="text-lg font-semibold text-gray-900">Pruebas Rápidas</h3>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+                label="📄 Boleta de Calificaciones"
+                severity="info"
+                @click="useSampleImage('grade-report')"
+                :loading="isLoading"
+                class="w-full"
+            />
+            <Button
+                label="📋 Registro de Asistencia"
+                severity="info"
+                @click="useSampleImage('attendance')"
+                :loading="isLoading"
+                class="w-full"
+            />
+            <Button
+                label="📝 Texto de Prueba"
+                severity="info"
+                @click="useTextSample"
+                :loading="isLoading"
+                class="w-full"
+            />
+          </div>
+
+          <Message severity="info" :closable="false">
+            <div class="text-sm">
+              💡 <strong>Tip:</strong> Usa las pruebas rápidas para verificar que el OCR está funcionando correctamente
+            </div>
+          </Message>
+        </div>
+      </template>
+    </Card>
+
     <!-- Upload Section -->
     <Card class="mb-6">
       <template #content>
-        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
-             @click="!previewUrl && fileInput?.click()"
-             @drop="handleDrop"
-             @dragover.prevent
-             @dragenter.prevent>
+        <div
+            class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+            @click="!previewUrl && fileInput?.click()"
+            @drop="handleDrop"
+            @dragover.prevent
+            @dragenter.prevent
+        >
           <input
               ref="fileInput"
               type="file"
@@ -45,7 +89,6 @@
               </p>
             </div>
 
-            <!-- Primary Upload Button -->
             <Button
                 label="Seleccionar Documento"
                 icon="pi pi-upload"
@@ -53,22 +96,9 @@
                 size="large"
                 class="mt-2"
             />
-
-            <!-- Try with Sample Button -->
-            <div class="mt-4 pt-4 border-t border-gray-200">
-              <p class="text-sm text-gray-600 mb-3">¿Quieres probar primero?</p>
-              <Button
-                  label="Probar con Imagen de Ejemplo"
-                  icon="pi pi-eye"
-                  severity="secondary"
-                  @click.stop="useSampleImage"
-                  size="small"
-              />
-            </div>
           </div>
 
           <div v-else class="space-y-4">
-            <!-- Image Preview -->
             <div class="mb-4">
               <img
                   :src="previewUrl"
@@ -77,7 +107,6 @@
               />
             </div>
 
-            <!-- File Info -->
             <div class="bg-gray-50 rounded-lg p-4 mb-4">
               <div class="flex items-center justify-between text-sm">
                 <div class="flex items-center space-x-2">
@@ -88,7 +117,6 @@
               </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="flex justify-center space-x-3">
               <Button
                   label="Procesar Documento"
@@ -107,7 +135,6 @@
             </div>
           </div>
 
-          <!-- Progress Bar -->
           <div v-if="isLoading" class="mt-6">
             <ProgressBar mode="indeterminate" class="h-2" />
             <p class="text-sm text-gray-600 mt-2">
@@ -117,9 +144,9 @@
         </div>
       </template>
     </Card>
+
     <!-- Results Section -->
     <div v-if="result || error" class="space-y-6">
-      <!-- Error Message -->
       <Message v-if="error" severity="error" :closable="true" @close="error = null">
         <div class="flex items-start">
           <i class="pi pi-times-circle text-xl mr-3"></i>
@@ -130,9 +157,7 @@
         </div>
       </Message>
 
-      <!-- Success Results -->
       <div v-if="result && result.success">
-        <!-- Extracted Text -->
         <Card>
           <template #header>
             <div class="p-4 border-b bg-green-50">
@@ -154,13 +179,12 @@
             </div>
           </template>
           <template #content>
-            <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap border border-gray-200">
+            <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap border border-gray-200 max-h-96 overflow-y-auto">
               {{ result.extractedText || 'No se extrajo texto' }}
             </div>
           </template>
         </Card>
 
-        <!-- Parsed Data -->
         <Card v-if="result.data">
           <template #header>
             <div class="p-4 border-b bg-blue-50">
@@ -174,7 +198,6 @@
           </template>
           <template #content>
             <div class="space-y-4">
-              <!-- Student Info -->
               <div v-if="result.data.student" class="bg-white p-4 rounded-lg border">
                 <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
                   <i class="pi pi-user mr-2 text-blue-600"></i>
@@ -200,7 +223,6 @@
                 </div>
               </div>
 
-              <!-- Academic Info -->
               <div v-if="result.data.academic" class="bg-white p-4 rounded-lg border">
                 <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
                   <i class="pi pi-book mr-2 text-green-600"></i>
@@ -225,26 +247,10 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Additional Fields -->
-              <div v-if="result.data.additionalFields && Object.keys(result.data.additionalFields).length > 0"
-                   class="bg-white p-4 rounded-lg border">
-                <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
-                  <i class="pi pi-info-circle mr-2 text-orange-600"></i>
-                  Campos Adicionales
-                </h4>
-                <div class="space-y-2 text-sm">
-                  <div v-for="(value, key) in result.data.additionalFields" :key="key">
-                    <span class="text-gray-500">{{ key }}:</span>
-                    <span class="font-medium ml-2">{{ value }}</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </template>
         </Card>
 
-        <!-- Actions -->
         <div class="flex justify-end space-x-3">
           <Button
               label="Procesar Otro Documento"
@@ -286,17 +292,10 @@
 </template>
 
 <script setup lang="ts">
-import {useAuthStore} from "~/stores/auth";
-
 definePageMeta({
-  middleware: defineNuxtRouteMiddleware((to, from) => {
-    const authStore = useAuthStore()
-
-    if (!authStore.isAuthenticated) {
-      return navigateTo('/login')
-    }
-  })
+  middleware: ['auth']
 })
+
 const fileInput = ref<HTMLInputElement>()
 const previewUrl = ref<string>('')
 const selectedFile = ref<File | null>(null)
@@ -313,13 +312,11 @@ const handleFileSelect = (event: Event) => {
   const file = target.files?.[0]
 
   if (file) {
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       error.value = 'El archivo es demasiado grande. Máximo 5MB.'
       return
     }
 
-    // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
     if (!validTypes.includes(file.type)) {
       error.value = 'Formato no soportado. Use JPG, PNG o PDF.'
@@ -334,6 +331,82 @@ const handleFileSelect = (event: Event) => {
   }
 }
 
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  const files = event.dataTransfer?.files
+  if (files && files[0]) {
+    handleFileUpload(files[0])
+  }
+}
+
+const handleFileUpload = (file: File) => {
+  if (file.size > 5 * 1024 * 1024) {
+    error.value = 'El archivo es demasiado grande. Máximo 5MB.'
+    return
+  }
+
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+  if (!validTypes.includes(file.type)) {
+    error.value = 'Formato no soportado. Use JPG, PNG o PDF.'
+    return
+  }
+
+  selectedFile.value = file
+  fileName.value = file.name
+  fileSize.value = formatFileSize(file.size)
+  previewUrl.value = URL.createObjectURL(file)
+  error.value = null
+}
+
+const useTextSample = async () => {
+  isLoading.value = true
+  error.value = null
+  result.value = null
+
+  try {
+    // Create a sample text as base64 image
+    const canvas = document.createElement('canvas')
+    canvas.width = 800
+    canvas.height = 600
+    const ctx = canvas.getContext('2d')!
+
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    ctx.fillStyle = 'black'
+    ctx.font = '24px Arial'
+    ctx.fillText('BOLETA DE CALIFICACIONES', 50, 50)
+    ctx.font = '18px Arial'
+    ctx.fillText('Estudiante: Juan Pérez', 50, 100)
+    ctx.fillText('Grado: 5to', 50, 130)
+    ctx.fillText('Sección: A', 50, 160)
+    ctx.fillText('Matemáticas: 85', 50, 210)
+    ctx.fillText('Español: 90', 50, 240)
+    ctx.fillText('Ciencias: 88', 50, 270)
+    ctx.fillText('Período: Primer Parcial', 50, 320)
+    ctx.fillText('Año Escolar: 2024', 50, 350)
+
+    const dataUrl = canvas.toDataURL('image/png')
+    const base64 = dataUrl.split(',')[1]
+
+    // Set preview
+    previewUrl.value = dataUrl
+    fileName.value = 'muestra-texto.png'
+    fileSize.value = formatFileSize(base64.length)
+
+    // Process immediately
+    await processImageBase64(base64)
+  } catch (err) {
+    error.value = 'Error al crear imagen de muestra'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const useSampleImage = async (type: string) => {
+  error.value = 'Función en desarrollo. Use "Texto de Prueba" para probar el OCR.'
+}
+
 const processImage = async () => {
   if (!selectedFile.value) return
 
@@ -343,25 +416,28 @@ const processImage = async () => {
 
   try {
     const base64 = await fileToBase64(selectedFile.value)
-
-    const response = await $api('/ocr/process', {
-      method: 'POST',
-      body: {
-        imageBase64: base64,
-        documentType: 'AcademicRecord'
-      }
-    })
-
-    result.value = response
-
-    if (!response.success) {
-      error.value = response.error || 'Error al procesar el documento'
-    }
+    await processImageBase64(base64)
   } catch (err: any) {
     console.error('Error processing image:', err)
     error.value = err.data?.message || err.message || 'Error al procesar el documento'
   } finally {
     isLoading.value = false
+  }
+}
+
+const processImageBase64 = async (base64: string) => {
+  const response = await $api('/ocr/process', {
+    method: 'POST',
+    body: {
+      imageBase64: base64,
+      documentType: 'AcademicRecord'
+    }
+  })
+
+  result.value = response
+
+  if (!response.success) {
+    error.value = response.error || 'Error al procesar el documento'
   }
 }
 
@@ -387,7 +463,6 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file)
     reader.onload = () => {
       const base64 = reader.result as string
-      // Remove data:image/...;base64, prefix
       resolve(base64.split(',')[1])
     }
     reader.onerror = error => reject(error)
@@ -405,67 +480,13 @@ const formatFileSize = (bytes: number): string => {
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text)
-    // Show success message (you can add a toast notification here)
     alert('Texto copiado al portapapeles')
   } catch (err) {
     console.error('Failed to copy:', err)
   }
 }
-// Add these methods to your script section
-const handleDrop = (event: DragEvent) => {
-  event.preventDefault()
-  const files = event.dataTransfer?.files
-  if (files && files[0]) {
-    handleFileUpload(files[0])
-  }
-}
-
-const handleFileUpload = (file: File) => {
-  // Validate file size (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    error.value = 'El archivo es demasiado grande. Máximo 5MB.'
-    return
-  }
-
-  // Validate file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
-  if (!validTypes.includes(file.type)) {
-    error.value = 'Formato no soportado. Use JPG, PNG o PDF.'
-    return
-  }
-
-  selectedFile.value = file
-  fileName.value = file.name
-  fileSize.value = formatFileSize(file.size)
-  previewUrl.value = URL.createObjectURL(file)
-  error.value = null
-}
-
-const useSampleImage = async () => {
-  // You can use a sample image URL or create a sample file
-  try {
-    isLoading.value = true
-    // Example: Load a sample image from your assets
-    const response = await fetch('/images/sample-document.jpg') // Add a sample image to your public folder
-    const blob = await response.blob()
-    const file = new File([blob], 'sample-document.jpg', { type: 'image/jpeg' })
-    handleFileUpload(file)
-  } catch (err) {
-    // Fallback: Create a mock file selection
-    error.value = 'No se pudo cargar la imagen de ejemplo. Por favor, selecciona un archivo manualmente.'
-  } finally {
-    isLoading.value = false
-  }
-} 
 
 const saveToSystem = async () => {
-  // TODO: Implement save functionality
   alert('Funcionalidad de guardado en desarrollo')
 }
 </script>
-
-<style scoped>
-.p-card {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-</style>
