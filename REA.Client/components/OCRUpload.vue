@@ -40,6 +40,8 @@
 </template>
 
 <script setup lang="ts">
+import type {OCRProcessRequest} from "~/types/api";
+
 const fileInput = ref<HTMLInputElement>()
 const previewUrl = ref<string>('')
 const selectedFile = ref<File | null>(null)
