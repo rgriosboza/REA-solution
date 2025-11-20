@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "fluted-expanse-477605-m6",
+  "private_key_id": "fdd7ba432920b244d3a33fa86f0107432145d9cc",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+oogR3mVnFJA6\nTJSTU7ZiK/nFTnxteVs57T1mkBUHahx41UolCGv1OZGngvVLf95zj5rE4Be8N7/x\nShXqSXHjLSWiI6nrlAo7HywgmyoG2YefydvvrRk0tOb4DsiIeOm5UOLgC1og3qZr\nL7fO6yKqH/Run/n+SQI1tPcNwjEuxWVm5eu+h0hAj+ahDxc6E89xvqdowf/pafQc\nTsjPMIau1+rBJ6G5qdKcHHnb9dtjbG8TdA07BVPSKMfqKrTyC59DFOVcvnXZUzkW\nTRHalTYfb8fzUqTqaQQI9XxEV+c4jx3tXYAQpmPFrkoNqM/hl7SA8oPZltNcwpPq\nVtkhsoMnAgMBAAECggEABuK5qyTkdmsx5HEvV/zzlFXbS+BQXTyUv3cNZd7OwPmj\ntUzwRH3VNxfRENhe7M8IZWsqn3GABKPiMnXHFzMiQnQ3LO/rK3T+7kYWIsgH+2mw\nXOSpJYiT5alNGGj29FBNvOGqODEgxxl+WwEaZgZsi5w43iViyGexr+ftQ9l09lKf\nUkOuIyXy1XEd5Ngrq8b1vtTGyYgEkuv+JhHpASW9oDelKWY2fbeHOCBFJhHkonbd\naCBH6JyfyLAEjYgA76t+SbXeHT7aD/uEfHJj3oHOhfBNXsuZkHB4+vU3b/Hmn2cW\nKf/s7ztuiy1+EBzkT1+P4o1RLbI/CY1yybmyAx8KnQKBgQDgRtkp/ib5jlQBlCdX\n2DOwn7N1tQHiHCBgmdHB9QsvRow8auhQIvkyzRanfXSh0EEXGfMRxoUq8h3w+Mni\nH6pnq1KaBbWsd4SqoR1z5dEKQb5+/7Ybpk57zV5Oab8H9Q1n2K8IiCLphafiRcuN\n1K6v6f/Mj3gwMxqhmB6rxu3j3QKBgQDZmX9wPu8ZLPw24pz2fQrDekNBUGKc2BhF\nnqLVdYsdDI7xZpdKGRy0ibz93Hj3NOJJbhCrL6l7l18dEgOkHrPYa5B+ceBTH8Zl\nE+LH8it3N6KLLjrb/l0IYB9mioOvqiH+ozVeTNTT5DR8VcsB9pLn2LJ4YhBtSqkC\nXLGCbm1E0wKBgQDFAzeNPec63Z5J7L1K2288vm1E/wZye8atVTH/saRrmQtjn34H\nt1E1IRe/deNYqboj8vWlLcCZYyqOHd4qNyrX+pWLG2zl3e+6e+GFh+JDolEW+sYc\nL9FNy7AGLbpT4R4vlRbc5cnVXUWG7UzMgIIbofDE31ry7FF+lkSLHSqoOQKBgEc1\no23ROp/Lh/JSMLm9a/NSpIXQT6UyVqcZ5gHjCJaGEJVRVHtMQoeWd8HAD9oedVtA\naLYMz/MBM4Ao8AYaghJ2CQBINfgd8ugLHPEAAFdwXoIbq+lokXt3MW92LugiziMt\nt/5XOGLrUH3L+bZ3wdWbpbQdq3CIuUxrly+vAZU/AoGBANdUguOeFBf5m9/REneh\nNBGamsZh69qbhJzMjQWUwhU7oB0+Me3P1uiN/bFCMs3LDQBN4zr27NYSB2cqMwHM\ngPnELzvDw1fjz0ZV+zoQHhrCdI//7KYH8cfGDlmQ8dgVk3h17udkxRFU1fatDcCX\n4PrREOEx3vimrhogXTsRpJQ5\n-----END PRIVATE KEY-----\n",
+  "client_email": "rea-ocr-service@fluted-expanse-477605-m6.iam.gserviceaccount.com",
+  "client_id": "105265834692577215757",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/rea-ocr-service%40fluted-expanse-477605-m6.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
