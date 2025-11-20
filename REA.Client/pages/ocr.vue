@@ -11,6 +11,17 @@
       </p>
     </div>
 
+    <!-- Auth Debug Info (Dev Mode) -->
+    <Card v-if="isDevMode" class="mb-6 bg-yellow-50 border-yellow-200">
+      <template #content>
+        <div class="text-sm space-y-1">
+          <p><strong>🔧 Modo Desarrollo Activo</strong></p>
+          <p>Auth Status: {{ isAuthenticated ? '✅ Autenticado' : '❌ No autenticado' }}</p>
+          <p v-if="currentUser">Usuario: {{ currentUser.username }} ({{ currentUser.role }})</p>
+        </div>
+      </template>
+    </Card>
+
     <!-- Quick Test Buttons -->
     <Card class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50">
       <template #content>
@@ -292,10 +303,21 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth'
+
 definePageMeta({
   middleware: ['auth']
 })
 
+const authStore = useAuthStore()
+const { $api } = useNuxtApp()
+
+// Auth state
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const currentUser = computed(() => authStore.user)
+const isDevMode = ref(false)
+
+// Component state
 const fileInput = ref<HTMLInputElement>()
 const previewUrl = ref<string>('')
 const selectedFile = ref<File | null>(null)
@@ -305,7 +327,17 @@ const isLoading = ref(false)
 const result = ref<any>(null)
 const error = ref<string | null>(null)
 
-const { $api } = useNuxtApp()
+// Check dev mode on mount
+onMounted(() => {
+  if (process.client) {
+    isDevMode.value = localStorage.getItem('dev_mode') === 'true'
+    console.log('📷 OCR page mounted', {
+      isAuthenticated: isAuthenticated.value,
+      user: currentUser.value?.username,
+      devMode: isDevMode.value
+    })
+  }
+})
 
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -364,7 +396,6 @@ const useTextSample = async () => {
   result.value = null
 
   try {
-    // Create a sample text as base64 image
     const canvas = document.createElement('canvas')
     canvas.width = 800
     canvas.height = 600
@@ -389,12 +420,10 @@ const useTextSample = async () => {
     const dataUrl = canvas.toDataURL('image/png')
     const base64 = dataUrl.split(',')[1]
 
-    // Set preview
     previewUrl.value = dataUrl
     fileName.value = 'muestra-texto.png'
     fileSize.value = formatFileSize(base64.length)
 
-    // Process immediately
     await processImageBase64(base64)
   } catch (err) {
     error.value = 'Error al crear imagen de muestra'

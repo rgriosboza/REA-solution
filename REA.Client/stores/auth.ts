@@ -12,7 +12,6 @@ export interface AuthUser {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-    const { $api } = useNuxtApp()
     const router = useRouter()
 
     // State
@@ -36,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = null
 
         try {
+            const { $api } = useNuxtApp()
             const response = await $api<any>('/auth/login', {
                 method: 'POST',
                 body: {
@@ -52,6 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (err: any) {
             error.value = err.data?.message || err.message || 'Error al iniciar sesión'
+            return false
         } finally {
             isLoading.value = false
         }
@@ -59,69 +60,17 @@ export const useAuthStore = defineStore('auth', () => {
 
     const logout = async () => {
         try {
+            const { $api } = useNuxtApp()
             await $api('/auth/logout', { method: 'POST' })
         } catch (err) {
             console.error('Logout API call failed:', err)
         } finally {
             clearAuth()
-            router.push('/login')
-        }
-    }
-
-    const refreshTokenAction = async () => {
-        if (!refreshToken.value) {
-            clearAuth()
-            return false
-        }
-
-        try {
-            const response = await $api<any>('/auth/refresh', {
-                method: 'POST',
-                body: {
-                    refreshToken: refreshToken.value
-                }
-            })
-
-            if (response.success && response.token) {
-                setAuth(response.token, response.refreshToken, response.user)
-                return true
+            if (process.client) {
+                window.location.href = '/login'
+            } else {
+                router.push('/login')
             }
-
-            clearAuth()
-            return false
-        } catch (err) {
-            console.error('Token refresh failed:', err)
-            clearAuth()
-            return false
-        }
-    }
-
-    const fetchCurrentUser = async () => {
-        if (!token.value) return null
-
-        try {
-            const response = await $api<AuthUser>('/auth/me')
-            user.value = response
-            return response
-        } catch (err) {
-            console.error('Failed to fetch current user:', err)
-            clearAuth()
-            return null
-        }
-    }
-
-    const changePassword = async (currentPassword: string, newPassword: string) => {
-        try {
-            await $api('/auth/change-password', {
-                method: 'POST',
-                body: {
-                    currentPassword,
-                    newPassword
-                }
-            })
-            return true
-        } catch (err: any) {
-            error.value = err.data?.message || 'Error al cambiar contraseña'
         }
     }
 
@@ -142,6 +91,12 @@ export const useAuthStore = defineStore('auth', () => {
                 storage.setItem('auth_refresh_token', authRefreshToken)
             }
             storage.setItem('auth_user', JSON.stringify(authUser))
+
+            console.log('✅ Auth data saved:', {
+                hasToken: !!authToken,
+                hasUser: !!authUser,
+                username: authUser.username
+            })
         }
     }
 
@@ -154,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.removeItem('auth_token')
             localStorage.removeItem('auth_refresh_token')
             localStorage.removeItem('auth_user')
+            localStorage.removeItem('dev_mode')
             sessionStorage.removeItem('auth_token')
             sessionStorage.removeItem('auth_refresh_token')
             sessionStorage.removeItem('auth_user')
@@ -161,38 +117,54 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     const initAuth = () => {
-        if (process.client) {
-            // Try localStorage first (remember me), then sessionStorage
-            const storedToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
-            const storedRefreshToken = localStorage.getItem('auth_refresh_token') || sessionStorage.getItem('auth_refresh_token')
-            const storedUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user')
+        if (!process.client) return
 
-            if (storedToken && storedUser) {
-                try {
-                    const parsedUser = JSON.parse(storedUser)
+        console.log('🔄 Initializing auth...')
 
-                    // Verify token hasn't expired (basic check)
-                    const tokenData = parseJwt(storedToken)
-                    if (tokenData.exp * 1000 > Date.now()) {
-                        token.value = storedToken
-                        refreshToken.value = storedRefreshToken
-                        user.value = parsedUser
+        // Try localStorage first (remember me), then sessionStorage
+        const storedToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+        const storedRefreshToken = localStorage.getItem('auth_refresh_token') || sessionStorage.getItem('auth_refresh_token')
+        const storedUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user')
 
-                        // Setup auto-refresh
-                        setupTokenRefresh()
-                    } else {
-                        // Token expired, try to refresh
-                        if (storedRefreshToken) {
-                            refreshTokenAction()
-                        } else {
-                            clearAuth()
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error parsing auth data:', error)
+        console.log('📦 Found auth data:', {
+            hasToken: !!storedToken,
+            hasRefreshToken: !!storedRefreshToken,
+            hasUser: !!storedUser
+        })
+
+        if (storedToken && storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser)
+
+                // In dev mode, skip token expiry check
+                const isDevMode = localStorage.getItem('dev_mode') === 'true'
+
+                if (isDevMode) {
+                    console.log('🔧 Dev mode: Accepting stored auth without validation')
+                    token.value = storedToken
+                    refreshToken.value = storedRefreshToken
+                    user.value = parsedUser
+                    console.log('✅ Auth initialized successfully')
+                    return
+                }
+
+                // Production mode: verify token hasn't expired
+                const tokenData = parseJwt(storedToken)
+                if (tokenData && tokenData.exp * 1000 > Date.now()) {
+                    token.value = storedToken
+                    refreshToken.value = storedRefreshToken
+                    user.value = parsedUser
+                    console.log('✅ Auth initialized successfully')
+                } else {
+                    console.log('⏰ Token expired')
                     clearAuth()
                 }
+            } catch (error) {
+                console.error('❌ Error parsing auth data:', error)
+                clearAuth()
             }
+        } else {
+            console.log('❌ No auth data found')
         }
     }
 
@@ -212,29 +184,8 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    const setupTokenRefresh = () => {
-        if (!token.value) return
-
-        try {
-            const tokenData = parseJwt(token.value)
-            if (!tokenData) return
-
-            const expiresIn = tokenData.exp * 1000 - Date.now()
-            const refreshTime = expiresIn - 5 * 60 * 1000 // Refresh 5 minutes before expiry
-
-            if (refreshTime > 0) {
-                setTimeout(() => {
-                    refreshTokenAction()
-                }, refreshTime)
-            }
-        } catch (error) {
-            console.error('Error setting up token refresh:', error)
-        }
-    }
-
     const hasRole = (requiredRole: string | string[]): boolean => {
         if (!user.value) return false
-
         const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
         return roles.includes(user.value.role)
     }
@@ -242,7 +193,6 @@ export const useAuthStore = defineStore('auth', () => {
     const hasPermission = (permission: string): boolean => {
         if (!user.value) return false
 
-        // Define permissions based on roles
         const rolePermissions: Record<string, string[]> = {
             Director: ['all'],
             VicePrincipal: ['students.manage', 'teachers.view', 'records.manage', 'payments.manage'],
@@ -253,12 +203,12 @@ export const useAuthStore = defineStore('auth', () => {
         return userPermissions.includes('all') || userPermissions.includes(permission)
     }
 
-    // Initialize auth on store creation
-    initAuth()
+    // Initialize auth on store creation (only on client)
+    if (process.client) {
+        initAuth()
+    }
 
     return {
-        // Remove this line: useAuthStore,
-
         // State
         user: readonly(user),
         token: readonly(token),
@@ -276,9 +226,8 @@ export const useAuthStore = defineStore('auth', () => {
         // Actions
         login,
         logout,
-        refreshTokenAction,
-        fetchCurrentUser,
-        changePassword,
+        setAuth,
+        clearAuth,
         hasRole,
         hasPermission,
         initAuth
