@@ -69,6 +69,52 @@ def intelligent_name_extraction(text, validator):
     validator.learn_from_text(" ".join(names))
     return " ".join(names)
 
+# Agrega esta función para mejor detección de datos académicos
+def extract_academic_data(text):
+    """
+    Extrae información académica del texto
+    """
+    data = {
+        'nombre': '',
+        'grado': '',
+        'materia': '',
+        'calificacion': '',
+        'periodo': ''
+    }
+
+    # Buscar patrones comunes en documentos académicos
+    lines = text.split('\n')
+
+    for line in lines:
+        line_lower = line.lower()
+
+        # Detectar nombre (líneas que contienen solo texto)
+        if not data['nombre'] and re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ\s.,]+$', line.strip()):
+            if len(line.strip()) > 3:
+                data['nombre'] = line.strip()
+
+        # Detectar grado
+        if 'grado' in line_lower or 'grade' in line_lower:
+            match = re.search(r'(\d+)(?:°|º|o)?', line)
+            if match:
+                data['grado'] = match.group(1)
+
+        # Detectar calificación
+        if 'calificación' in line_lower or 'nota' in line_lower or 'score' in line_lower:
+            match = re.search(r'(\d{1,3})', line)
+            if match:
+                data['calificacion'] = match.group(1)
+
+        # Detectar materia
+        materias = ['matemática', 'español', 'ciencia', 'historia', 'geografía', 'inglés',
+                    'matematica', 'espanol', 'sociales', 'naturales']
+        for materia in materias:
+            if materia in line_lower:
+                data['materia'] = line.strip()
+                break
+
+    return data
+
 def process_image(image_path, validator):
     print(f"\nProcesando: {image_path}")
     try:

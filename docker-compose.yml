@@ -16,11 +16,12 @@ services:
       - rea-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-  # Flask OCR Service (Python)
+  # Flask OCR Service
   flask-ocr:
     build:
       context: ./flask-ocr
@@ -37,9 +38,13 @@ services:
       - rea-network
     environment:
       - PYTHONUNBUFFERED=1
-    restart: on-failure
+      - FLASK_ENV=development
+    depends_on:
+      rea-db:
+        condition: service_healthy
+    restart: unless-stopped
 
-  # .NET API (Backend)
+  # .NET API
   rea-api:
     build:
       context: .
@@ -58,23 +63,23 @@ services:
         condition: service_started
     networks:
       - rea-network
-    restart: on-failure
+    restart: unless-stopped
 
-  # Nuxt.js Client (Frontend)
+  # Nuxt.js Client
   rea-client:
     build:
       context: ./REA.Client
       dockerfile: Dockerfile
     container_name: rea-client
     environment:
-      - NUXT_PUBLIC_API_BASE=http://localhost:8080/api
+      - NUXT_PUBLIC_API_BASE=http://rea-api:8080/api
     ports:
       - "3000:3000"
     depends_on:
       - rea-api
     networks:
       - rea-network
-    restart: on-failure
+    restart: unless-stopped
 
 networks:
   rea-network:

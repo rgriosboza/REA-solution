@@ -149,7 +149,7 @@
           <div v-if="isLoading" class="mt-6">
             <ProgressBar mode="indeterminate" class="h-2" />
             <p class="text-sm text-gray-600 mt-2">
-              Procesando documento con Google Vision API...
+              Procesando documento... espera por favor
             </p>
           </div>
         </div>
@@ -455,18 +455,25 @@ const processImage = async () => {
 }
 
 const processImageBase64 = async (base64: string) => {
-  const response = await $api('/ocr/process', {
-    method: 'POST',
-    body: {
-      imageBase64: base64,
-      documentType: 'AcademicRecord'
+  try {
+    console.log('Enviando imagen al servidor OCR...')
+    const response = await $api('/ocr/process', {
+      method: 'POST',
+      body: {
+        imageBase64: base64,
+        documentType: 'AcademicRecord'
+      }
+    })
+
+    console.log('Respuesta del OCR:', response)
+    result.value = response
+
+    if (!response.success) {
+      error.value = response.error || 'Error al procesar el documento'
     }
-  })
-
-  result.value = response
-
-  if (!response.success) {
-    error.value = response.error || 'Error al procesar el documento'
+  } catch (err: any) {
+    console.error('Error completo:', err)
+    error.value = err.data?.message || err.message || 'Error de conexión con el servidor OCR'
   }
 }
 
@@ -516,6 +523,42 @@ const copyToClipboard = async (text: string) => {
 }
 
 const saveToSystem = async () => {
-  alert('Funcionalidad de guardado en desarrollo')
+  if (!result.value?.data) {
+    alert('No hay datos para guardar')
+    return
+  }
+
+  try {
+    isLoading.value = true
+
+    // Extract student data
+    const studentData = {
+      firstName: result.value.data.student?.fullName?.split(' ')[0] || '',
+      lastName: result.value.data.student?.fullName?.split(' ').slice(1).join(' ') || '',
+      dateOfBirth: new Date().toISOString().split('T')[0], // Default, should be extracted
+      grade: result.value.data.student?.grade || '1st',
+      section: result.value.data.student?.section || 'A'
+    }
+
+    // Create student
+    const response = await $api('/students', {
+      method: 'POST',
+      body: studentData
+    })
+
+    if (response) {
+      alert('✅ Estudiante guardado exitosamente')
+      resetAll()
+    }
+  } catch (err: any) {
+    console.error('Error saving to system:', err)
+    alert('❌ Error al guardar: ' + (err.message || 'Error desconocido'))
+  } finally {
+    isLoading.value = false
+  }
 }
+
+
+
 </script>
+
