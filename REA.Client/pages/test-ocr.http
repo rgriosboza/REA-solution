@@ -1,0 +1,8 @@
+### Test OCR Processing
+POST http://localhost:8080/api/ocr/process
+Content-Type: application/json
+
+{
+  "imageBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "documentType": "AcademicRecord"
+}
