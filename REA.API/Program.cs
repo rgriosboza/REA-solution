@@ -91,13 +91,23 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("Director", "VicePrincipal", "Teacher"));
 });
 
+// HttpClient for Flask OCR Service
+builder.Services.AddHttpClient("FlaskOCR", client =>
+{
+    var flaskUrl = builder.Configuration["OCR:FlaskServerUrl"] ?? "http://localhost:5000";
+    client.BaseAddress = new Uri(flaskUrl);
+    client.Timeout = TimeSpan.FromMinutes(5); // OCR can take time
+});
+
 // Application Services
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IAcademicRecordService, AcademicRecordService>();
-builder.Services.AddScoped<IOCRService, GoogleOCRService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserSeederService, UserSeederService>();
+
+// IMPORTANT: Use Flask OCR Service instead of Google Vision
+builder.Services.AddScoped<IOCRService, FlaskOCRService>();
 
 // Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
